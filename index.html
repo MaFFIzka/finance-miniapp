@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Учёт финансов</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--tg-theme-bg-color, #ffffff);
+      color: var(--tg-theme-text-color, #000000);
+      padding: 16px;
+      min-height: 100vh;
+    }
+    .container { max-width: 600px; margin: 0 auto; }
+    h1 { font-size: 22px; margin-bottom: 16px; }
+    .card {
+      background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .balance-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+    .balance-row.total {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--tg-theme-hint-color, #ccc);
+      font-weight: bold;
+      font-size: 17px;
+    }
+    .income { color: #4caf50; }
+    .expense { color: #f44336; }
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: var(--tg-theme-bg-color, #fff);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .history-item .left { flex: 1; }
+    .history-item .category { font-weight: 600; font-size: 15px; }
+    .history-item .date { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+    .history-item .amount { font-weight: 600; font-size: 16px; }
+    .loading { text-align: center; padding: 40px; opacity: 0.6; }
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .pagination {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 16px;
+    }
+    .pagination button {
+      background: var(--tg-theme-button-color, #2481cc);
+      color: var(--tg-theme-button-text-color, #fff);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .pagination button:disabled { opacity: 0.4; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>💰 Мои финансы</h1>
+    <div id="app">
+      <div class="loading">Загрузка...</div>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    // ВАШ URL Apps Script (замените на свой!)
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzmQsT80R8BamkzCmwjRNBnxTAcz_zOqDZFc4ff_EiIM_U9ieozPYNJsljYLXZEoYyM/exec';
+
+    let currentPage = 1;
+    let totalPages = 1;
+
+    // Универсальная функция запроса к Apps Script
+    async function callAPI(action, params = {}) {
+      const payload = {
+        initData: tg.initData,
+        action: action,
+        ...params
+      };
+
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await response.json();
+      if (json.error) throw new Error(json.error);
+      return json;
+    }
+
+    // Загрузка баланса
+    async function loadBalance() {
+      const balance = await callAPI('getBalance');
+      return `
+        <div class="card">
+          <div style="font-size: 13px; opacity: 0.6; margin-bottom: 12px;">
+            ${balance.month}.${balance.year}
+          </div>
+          <div class="balance-row">
+            <span>💰 Доходы</span>
+            <span class="income">+${balance.income.toFixed(0)} ₽</span>
+          </div>
+          <div class="balance-row">
+            <span>💸 Расходы</span>
+            <span class="expense">-${balance.expense.toFixed(0)} ₽</span>
+          </div>
+          <div class="balance-row total">
+            <span>💼 Баланс</span>
+            <span>${balance.balance.toFixed(0)} ₽</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // Загрузка истории
+    async function loadHistory() {
+      const data = await callAPI('getHistory', { page: currentPage });
+      totalPages = data.totalPages;
+
+      if (data.records.length === 0) {
+        return '<div class="card">📭 Пока нет записей</div>';
+      }
+
+      let html = '<h2 style="font-size: 16px; margin-bottom: 12px;">📋 История</h2>';
+      data.records.forEach(r => {
+        const emoji = r.type === 'Доход' ? '💰' : '💸';
+        const cls = r.type === 'Доход' ? 'income' : 'expense';
+        html += `
+          <div class="history-item">
+            <div class="left">
+              <div class="category">${emoji} ${r.category}</div>
+              <div class="date">${r.date}</div>
+            </div>
+            <div class="amount ${cls}">${r.amount.toFixed(0)} ₽</div>
+          </div>
+        `;
+      });
+
+      html += `
+        <div class="pagination">
+          <button onclick="changePage(-1)" ${currentPage <= 1 ? 'disabled' : ''}>◀️ Назад</button>
+          <span style="align-self: center;">${currentPage} / ${totalPages}</span>
+          <button onclick="changePage(1)" ${currentPage >= totalPages ? 'disabled' : ''}>Вперёд ▶️</button>
+        </div>
+      `;
+
+      return html;
+    }
+
+    // Смена страницы
+    async function changePage(delta) {
+      currentPage += delta;
+      const app = document.getElementById('app');
+      app.innerHTML = '<div class="loading">Загрузка...</div>';
+      try {
+        const historyHtml = await loadHistory();
+        app.innerHTML = historyHtml;
+      } catch (err) {
+        app.innerHTML = `<div class="error">Ошибка: ${err.message}</div>`;
+      }
+    }
+
+    // Инициализация
+    async function init() {
+      const app = document.getElementById('app');
+      try {
+        const balanceHtml = await loadBalance();
+        const historyHtml = await loadHistory();
+        app.innerHTML = balanceHtml + historyHtml;
+      } catch (err) {
+        app.innerHTML = `<div class="error">Ошибка: ${err.message}</div>`;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
