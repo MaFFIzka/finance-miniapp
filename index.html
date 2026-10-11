@@ -87,12 +87,6 @@
 </head>
 <body>
   <div class="container">
-    <div class="debug">
-  <strong>🔍 Debug:</strong> <span id="debug-info">загрузка...</span>
-  <br><br>
-  <strong>📋 initData (нажмите, чтобы скопировать):</strong>
-  <textarea id="initdata-full" readonly style="width: 100%; height: 100px; margin-top: 4px; font-size: 10px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;" onclick="this.select()"></textarea>
-</div>
     <h1>💰 Мои финансы</h1>
     <div id="app">
       <div class="loading">Загрузка...</div>
@@ -216,37 +210,6 @@
         app.innerHTML = `<div class="error">Ошибка: ${err.message}</div>`;
       }
     }
-
-    // ==================== DEBUG: показать initData на странице ====================
-    function updateDebug() {
-  const debugEl = document.getElementById('debug-info');
-  const textarea = document.getElementById('initdata-full');
-  if (!debugEl) return;
-
-  const hasTelegram = typeof window.Telegram !== 'undefined' && window.Telegram.WebApp;
-  const initData = tg.initData || '';
-  const initDataLen = initData.length;
-  const userInfo = tg.initDataUnsafe && tg.initDataUnsafe.user
-    ? tg.initDataUnsafe.user.id + ' (' + (tg.initDataUnsafe.user.first_name || '') + ')'
-    : 'нет';
-
-  debugEl.textContent =
-    'Telegram: ' + (hasTelegram ? '✅' : '❌') +
-    ' | initData length: ' + initDataLen +
-    ' | user: ' + userInfo;
-
-  if (textarea) {
-    textarea.value = initData;
-  }
-}
-
-setTimeout(updateDebug, 1000);
-setTimeout(updateDebug, 3000);
-
-    // Обновляем debug через 1 и 3 секунды (когда initData точно загрузится)
-    setTimeout(updateDebug, 1000);
-    setTimeout(updateDebug, 3000);
-
     // Запуск
     init();
   </script>
