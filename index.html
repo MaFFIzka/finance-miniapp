@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Учёт финансов</title>
+  <title>Мои финансы</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -12,10 +12,12 @@
       background: var(--tg-theme-bg-color, #ffffff);
       color: var(--tg-theme-text-color, #000000);
       padding: 16px;
+      padding-bottom: 80px;
       min-height: 100vh;
     }
     .container { max-width: 600px; margin: 0 auto; }
     h1 { font-size: 22px; margin-bottom: 16px; }
+    h2 { font-size: 16px; margin-bottom: 12px; }
     .card {
       background: var(--tg-theme-secondary-bg-color, #f1f1f1);
       border-radius: 12px;
@@ -73,38 +75,182 @@
       cursor: pointer;
     }
     .pagination button:disabled { opacity: 0.4; }
-    .debug {
-      padding: 10px;
-      background: #fff3cd;
-      font-size: 11px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      word-break: break-all;
-      line-height: 1.5;
-      color: #856404;
+
+    /* Навигация внизу */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--tg-theme-bg-color, #ffffff);
+      border-top: 1px solid var(--tg-theme-hint-color, #eee);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0;
+      max-width: 600px;
+      margin: 0 auto;
     }
+    .nav-item {
+      flex: 1;
+      text-align: center;
+      padding: 8px;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--tg-theme-hint-color, #999);
+      border: none;
+      background: none;
+      transition: color 0.2s;
+    }
+    .nav-item.active {
+      color: var(--tg-theme-button-color, #2481cc);
+      font-weight: 600;
+    }
+    .nav-item .icon {
+      display: block;
+      font-size: 22px;
+      margin-bottom: 2px;
+    }
+
+    /* Форма добавления */
+    .form-group { margin-bottom: 12px; }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+      opacity: 0.7;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--tg-theme-hint-color, #ccc);
+      background: var(--tg-theme-bg-color, #fff);
+      color: var(--tg-theme-text-color, #000);
+      font-size: 15px;
+      font-family: inherit;
+    }
+    .type-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .type-toggle button {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--tg-theme-hint-color, #ccc);
+      background: var(--tg-theme-bg-color, #fff);
+      color: var(--tg-theme-text-color, #000);
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .type-toggle button.active {
+      background: var(--tg-theme-button-color, #2481cc);
+      color: var(--tg-theme-button-text-color, #fff);
+      border-color: var(--tg-theme-button-color, #2481cc);
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: var(--tg-theme-button-color, #2481cc);
+      color: var(--tg-theme-button-text-color, #fff);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .submit-btn:disabled { opacity: 0.5; }
+
+    /* Графики */
+    .chart-bar {
+      margin-bottom: 12px;
+    }
+    .chart-bar-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .chart-bar-track {
+      height: 8px;
+      background: var(--tg-theme-secondary-bg-color, #eee);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .chart-bar-fill {
+      height: 100%;
+      background: var(--tg-theme-button-color, #2481cc);
+      border-radius: 4px;
+      transition: width 0.5s;
+    }
+    .chart-total {
+      text-align: center;
+      padding: 16px;
+      font-size: 15px;
+    }
+    .chart-total strong { font-size: 20px; }
+
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #4caf50;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    .toast.show { opacity: 1; }
+    .toast.error { background: #f44336; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>💰 Мои финансы</h1>
     <div id="app">
       <div class="loading">Загрузка...</div>
     </div>
   </div>
+
+  <div class="bottom-nav">
+    <button class="nav-item active" onclick="navigate('home')">
+      <span class="icon">🏠</span>
+      Главная
+    </button>
+    <button class="nav-item" onclick="navigate('add')">
+      <span class="icon">➕</span>
+      Добавить
+    </button>
+    <button class="nav-item" onclick="navigate('charts')">
+      <span class="icon">📊</span>
+      Графики
+    </button>
+  </div>
+
+  <div class="toast" id="toast"></div>
 
   <script>
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 
-    // ВАШ URL Apps Script
     const API_URL = '/miniapp';
 
     let currentPage = 1;
     let totalPages = 1;
+    let currentScreen = 'home';
+    let categoriesCache = null;
+    let formType = 'Расход';
 
-    // Универсальная функция запроса к Apps Script
+    // ==================== API ====================
     async function callAPI(action, params = {}) {
       const payload = {
         initData: tg.initData,
@@ -112,25 +258,53 @@
         ...params
       };
 
-      console.log('Отправка запроса:', { action: action, initDataLength: (tg.initData || '').length });
-
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      console.log('Ответ:', response.status);
-
       const json = await response.json();
       if (json.error) throw new Error(json.error);
       return json;
     }
 
-    // Загрузка баланса
-    async function loadBalance() {
-      const balance = await callAPI('getBalance');
+    // ==================== УВЕДОМЛЕНИЯ ====================
+    function showToast(message, isError) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast show' + (isError ? ' error' : '');
+      setTimeout(() => { toast.className = 'toast'; }, 2500);
+    }
+
+    // ==================== НАВИГАЦИЯ ====================
+    function navigate(screen) {
+      currentScreen = screen;
+      document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.nav-item')[screen === 'home' ? 0 : screen === 'add' ? 1 : 2].classList.add('active');
+      
+      if (screen === 'home') loadHome();
+      else if (screen === 'add') loadAddForm();
+      else if (screen === 'charts') loadCharts();
+    }
+
+    // ==================== ГЛАВНАЯ ====================
+    async function loadHome() {
+      const app = document.getElementById('app');
+      app.innerHTML = '<div class="loading">Загрузка...</div>';
+      try {
+        const balance = await callAPI('getBalance');
+        const history = await callAPI('getHistory', { page: currentPage });
+        totalPages = history.totalPages;
+        app.innerHTML = renderBalance(balance) + renderHistory(history);
+      } catch (err) {
+        app.innerHTML = `<div class="error">Ошибка: ${err.message}</div>`;
+      }
+    }
+
+    function renderBalance(balance) {
       return `
+        <h1>💰 Мои финансы</h1>
         <div class="card">
           <div style="font-size: 13px; opacity: 0.6; margin-bottom: 12px;">
             ${balance.month}.${balance.year}
@@ -151,16 +325,12 @@
       `;
     }
 
-    // Загрузка истории
-    async function loadHistory() {
-      const data = await callAPI('getHistory', { page: currentPage });
-      totalPages = data.totalPages;
-
+    function renderHistory(data) {
       if (data.records.length === 0) {
         return '<div class="card">📭 Пока нет записей</div>';
       }
 
-      let html = '<h2 style="font-size: 16px; margin-bottom: 12px;">📋 История</h2>';
+      let html = '<h2>📋 История</h2>';
       data.records.forEach(r => {
         const emoji = r.type === 'Доход' ? '💰' : '💸';
         const cls = r.type === 'Доход' ? 'income' : 'expense';
@@ -186,32 +356,175 @@
       return html;
     }
 
-    // Смена страницы
     async function changePage(delta) {
       currentPage += delta;
+      if (currentPage < 1) currentPage = 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      loadHome();
+    }
+
+    // ==================== ДОБАВЛЕНИЕ ====================
+    async function loadAddForm() {
       const app = document.getElementById('app');
       app.innerHTML = '<div class="loading">Загрузка...</div>';
+      
       try {
-        const historyHtml = await loadHistory();
-        app.innerHTML = historyHtml;
+        if (!categoriesCache) {
+          const data = await callAPI('getCategories');
+          categoriesCache = data.categories;
+        }
+        app.innerHTML = renderAddForm();
       } catch (err) {
         app.innerHTML = `<div class="error">Ошибка: ${err.message}</div>`;
       }
     }
 
-    // Инициализация
-    async function init() {
-      const app = document.getElementById('app');
+    function renderAddForm() {
+      let categoryOptions = '';
+      categoriesCache.forEach(cat => {
+        categoryOptions += `<option value="${cat.category}">${cat.category}</option>`;
+      });
+
+      return `
+        <h1>➕ Добавить запись</h1>
+        <div class="card">
+          <div class="type-toggle">
+            <button class="${formType === 'Расход' ? 'active' : ''}" onclick="setType('Расход')">💸 Расход</button>
+            <button class="${formType === 'Доход' ? 'active' : ''}" onclick="setType('Доход')">💰 Доход</button>
+          </div>
+
+          <div class="form-group">
+            <label>Сумма (₽)</label>
+            <input type="number" id="form-amount" placeholder="0" inputmode="numeric" step="0.01">
+          </div>
+
+          <div class="form-group">
+            <label>Категория</label>
+            <select id="form-category">
+              ${categoryOptions}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Комментарий (необязательно)</label>
+            <input type="text" id="form-comment" placeholder="Например: обед в кафе">
+          </div>
+
+          <div class="form-group">
+            <label>Дата</label>
+            <select id="form-date">
+              <option value="">Сегодня</option>
+              <option value="вчера">Вчера</option>
+              <option value="позавчера">Позавчера</option>
+            </select>
+          </div>
+
+          <button class="submit-btn" onclick="submitRecord()">✅ Записать</button>
+        </div>
+      `;
+    }
+
+    function setType(type) {
+      formType = type;
+      document.querySelectorAll('.type-toggle button').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    async function submitRecord() {
+      const amount = document.getElementById('form-amount').value;
+      const category = document.getElementById('form-category').value;
+      const comment = document.getElementById('form-comment').value;
+      const date = document.getElementById('form-date').value;
+
+      if (!amount || parseFloat(amount) <= 0) {
+        showToast('Введите сумму', true);
+        return;
+      }
+
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = '⏳ Сохраняю...';
+
       try {
-        const balanceHtml = await loadBalance();
-        const historyHtml = await loadHistory();
-        app.innerHTML = balanceHtml + historyHtml;
+        await callAPI('addRecord', {
+          record: {
+            type: formType,
+            amount: parseFloat(amount),
+            category: category,
+            comment: comment,
+            date: date || null
+          }
+        });
+        
+        showToast('✅ Запись добавлена!');
+        
+        // Сброс формы
+        document.getElementById('form-amount').value = '';
+        document.getElementById('form-comment').value = '';
+        document.getElementById('form-date').value = '';
+        
+        btn.disabled = false;
+        btn.textContent = '✅ Записать';
+        
+        // Переход на главную через 1 секунду
+        setTimeout(() => navigate('home'), 1000);
+
+      } catch (err) {
+        showToast('Ошибка: ' + err.message, true);
+        btn.disabled = false;
+        btn.textContent = '✅ Записать';
+      }
+    }
+
+    // ==================== ГРАФИКИ ====================
+    async function loadCharts() {
+      const app = document.getElementById('app');
+      app.innerHTML = '<div class="loading">Загрузка...</div>';
+      
+      try {
+        const stats = await callAPI('getCategoryStats');
+        app.innerHTML = renderCharts(stats);
       } catch (err) {
         app.innerHTML = `<div class="error">Ошибка: ${err.message}</div>`;
       }
     }
-    // Запуск
-    init();
+
+    function renderCharts(stats) {
+      if (stats.categories.length === 0) {
+        return `
+          <h1>📊 Графики</h1>
+          <div class="card">📭 Пока нет расходов за этот месяц</div>
+        `;
+      }
+
+      let html = `<h1>📊 Расходы за ${stats.month}.${stats.year}</h1>`;
+      
+      html += `
+        <div class="card chart-total">
+          Всего потрачено<br>
+          <strong>${stats.total.toFixed(0)} ₽</strong>
+        </div>
+      `;
+
+      stats.categories.forEach(cat => {
+        html += `
+          <div class="card chart-bar">
+            <div class="chart-bar-header">
+              <span><strong>${cat.category}</strong></span>
+              <span>${cat.amount.toFixed(0)} ₽ (${cat.percent}%)</span>
+            </div>
+            <div class="chart-bar-track">
+              <div class="chart-bar-fill" style="width: ${cat.percent}%"></div>
+            </div>
+          </div>
+        `;
+      });
+
+      return html;
+    }
+
+    // ==================== СТАРТ ====================
+    loadHome();
   </script>
 </body>
 </html>
