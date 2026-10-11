@@ -326,35 +326,44 @@
     }
 
     function renderHistory(data) {
-      if (data.records.length === 0) {
-        return '<div class="card">📭 Пока нет записей</div>';
-      }
+  if (data.records.length === 0) {
+    return '<div class="card">📭 Пока нет записей</div>';
+  }
 
-      let html = '<h2>📋 История</h2>';
-      data.records.forEach(r => {
-        const emoji = r.type === 'Доход' ? '💰' : '💸';
-        const cls = r.type === 'Доход' ? 'income' : 'expense';
-        html += `
-          <div class="history-item">
-            <div class="left">
-              <div class="category">${emoji} ${r.category}</div>
-              <div class="date">${r.date}</div>
-            </div>
-            <div class="amount ${cls}">${r.amount.toFixed(0)} ₽</div>
-          </div>
-        `;
-      });
-
-      html += `
-        <div class="pagination">
-          <button onclick="changePage(-1)" ${currentPage <= 1 ? 'disabled' : ''}>◀️ Назад</button>
-          <span style="align-self: center;">${currentPage} / ${totalPages}</span>
-          <button onclick="changePage(1)" ${currentPage >= totalPages ? 'disabled' : ''}>Вперёд ▶️</button>
+  let html = '<h2>📋 История</h2>';
+  data.records.forEach(r => {
+    const emoji = r.type === 'Доход' ? '💰' : '💸';
+    const cls = r.type === 'Доход' ? 'income' : 'expense';
+    html += `
+      <div class="history-item">
+        <div class="left">
+          <div class="category">${emoji} ${r.category}</div>
+          <div class="date">${r.date}</div>
+          ${r.comment ? `<div class="date">${r.comment}</div>` : ''}
         </div>
-      `;
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="amount ${cls}">${r.amount.toFixed(0)} ₽</div>
+          <button 
+            class="delete-btn" 
+            onclick="deleteRecord(${r.rowNumber}, '${r.category.replace(/'/g, "\\'")}', ${r.amount})"
+            title="Удалить">
+            🗑
+          </button>
+        </div>
+      </div>
+    `;
+  });
 
-      return html;
-    }
+  html += `
+    <div class="pagination">
+      <button onclick="changePage(-1)" ${currentPage <= 1 ? 'disabled' : ''}>◀️ Назад</button>
+      <span style="align-self: center;">${currentPage} / ${totalPages}</span>
+      <button onclick="changePage(1)" ${currentPage >= totalPages ? 'disabled' : ''}>Вперёд ▶️</button>
+    </div>
+  `;
+
+  return html;
+}
 
     async function changePage(delta) {
       currentPage += delta;
