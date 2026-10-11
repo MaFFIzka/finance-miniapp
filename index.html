@@ -73,10 +73,23 @@
       cursor: pointer;
     }
     .pagination button:disabled { opacity: 0.4; }
+    .debug {
+      padding: 10px;
+      background: #fff3cd;
+      font-size: 11px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      word-break: break-all;
+      line-height: 1.5;
+      color: #856404;
+    }
   </style>
 </head>
 <body>
   <div class="container">
+    <div class="debug">
+      <strong>🔍 Debug:</strong> <span id="debug-info">загрузка...</span>
+    </div>
     <h1>💰 Мои финансы</h1>
     <div id="app">
       <div class="loading">Загрузка...</div>
@@ -88,7 +101,7 @@
     tg.ready();
     tg.expand();
 
-    // ВАШ URL Apps Script (замените на свой!)
+    // ВАШ URL Apps Script
     const API_URL = 'https://telegram-proxy.artemtkach1999.workers.dev/miniapp';
 
     let currentPage = 1;
@@ -102,11 +115,15 @@
         ...params
       };
 
+      console.log('Отправка запроса:', { action: action, initDataLength: (tg.initData || '').length });
+
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+
+      console.log('Ответ:', response.status);
 
       const json = await response.json();
       if (json.error) throw new Error(json.error);
@@ -197,6 +214,34 @@
       }
     }
 
+    // ==================== DEBUG: показать initData на странице ====================
+    function updateDebug() {
+      const debugEl = document.getElementById('debug-info');
+      if (!debugEl) return;
+
+      const hasTelegram = typeof window.Telegram !== 'undefined' && window.Telegram.WebApp;
+      const initDataLen = (tg.initData || '').length;
+      const userInfo = tg.initDataUnsafe && tg.initDataUnsafe.user
+        ? tg.initDataUnsafe.user.id + ' (' + (tg.initDataUnsafe.user.first_name || '') + ')'
+        : 'нет';
+
+      debugEl.textContent =
+        'Telegram: ' + (hasTelegram ? '✅' : '❌') +
+        ' | initData length: ' + initDataLen +
+        ' | user: ' + userInfo;
+
+      console.log('=== DEBUG ===');
+      console.log('Telegram object:', window.Telegram);
+      console.log('initData length:', initDataLen);
+      console.log('initData (первые 100):', (tg.initData || '').substring(0, 100));
+      console.log('user:', tg.initDataUnsafe ? tg.initDataUnsafe.user : null);
+    }
+
+    // Обновляем debug через 1 и 3 секунды (когда initData точно загрузится)
+    setTimeout(updateDebug, 1000);
+    setTimeout(updateDebug, 3000);
+
+    // Запуск
     init();
   </script>
 </body>
