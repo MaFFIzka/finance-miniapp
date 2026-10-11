@@ -219,26 +219,29 @@
 
     // ==================== DEBUG: показать initData на странице ====================
     function updateDebug() {
-      const debugEl = document.getElementById('debug-info');
-      if (!debugEl) return;
+  const debugEl = document.getElementById('debug-info');
+  const textarea = document.getElementById('initdata-full');
+  if (!debugEl) return;
 
-      const hasTelegram = typeof window.Telegram !== 'undefined' && window.Telegram.WebApp;
-      const initDataLen = (tg.initData || '').length;
-      const userInfo = tg.initDataUnsafe && tg.initDataUnsafe.user
-        ? tg.initDataUnsafe.user.id + ' (' + (tg.initDataUnsafe.user.first_name || '') + ')'
-        : 'нет';
+  const hasTelegram = typeof window.Telegram !== 'undefined' && window.Telegram.WebApp;
+  const initData = tg.initData || '';
+  const initDataLen = initData.length;
+  const userInfo = tg.initDataUnsafe && tg.initDataUnsafe.user
+    ? tg.initDataUnsafe.user.id + ' (' + (tg.initDataUnsafe.user.first_name || '') + ')'
+    : 'нет';
 
-      debugEl.textContent =
-        'Telegram: ' + (hasTelegram ? '✅' : '❌') +
-        ' | initData length: ' + initDataLen +
-        ' | user: ' + userInfo;
+  debugEl.textContent =
+    'Telegram: ' + (hasTelegram ? '✅' : '❌') +
+    ' | initData length: ' + initDataLen +
+    ' | user: ' + userInfo;
 
-      console.log('=== DEBUG ===');
-      console.log('Telegram object:', window.Telegram);
-      console.log('initData length:', initDataLen);
-      console.log('initData (первые 100):', (tg.initData || '').substring(0, 100));
-      console.log('user:', tg.initDataUnsafe ? tg.initDataUnsafe.user : null);
-    }
+  if (textarea) {
+    textarea.value = initData;
+  }
+}
+
+setTimeout(updateDebug, 1000);
+setTimeout(updateDebug, 3000);
 
     // Обновляем debug через 1 и 3 секунды (когда initData точно загрузится)
     setTimeout(updateDebug, 1000);
